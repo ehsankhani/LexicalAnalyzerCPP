@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <cctype>
+#include <algorithm> // for std::any_of
+#include <utility>
 
 using namespace std;
 
@@ -21,17 +23,19 @@ struct Token {
     TokenType type;
     string value;
     int line;
-    int column;
+    size_t column;
+
+    // Constructor to initialize all fields
+    explicit Token(TokenType t = WHITESPACE, string v = "", int l = 0, size_t c = 0)
+            : type(t), value(std::move(v)), line(l), column(c) {}
 };
 
-bool isKeyword(const string& token) {
-    static const string keywords[] = {"true", "for", "do", "begin", "try", "if", "double", "bool", "while", "int", "else", "break", "void", "return", "end", "case", "false", "char", "switch", "float", "class"};
-    for (const auto& keyword : keywords) {
-        if (token == keyword) {
-            return true;
-        }
-    }
-    return false;
+bool isKeyword(const std::string& token) {
+    static const std::string keywords[] = {"true", "for", "do", "begin", "try", "if", "double", "bool", "while", "int", "else", "break", "void", "return", "end", "case", "false", "char", "switch", "float", "class"};
+
+    return std::any_of(std::begin(keywords), std::end(keywords), [&](const std::string& keyword) {
+        return token == keyword;
+    });
 }
 
 bool isOperator(char c) {
@@ -121,7 +125,7 @@ int main() {
     int lineNumber = 1;
 
     while (getline(cin, line) && !line.empty()) {
-        std::cout<<std::endl;
+        std::cout << std::endl;
         size_t pos = 0;
         while (pos < line.size()) {
             Token token = getNextToken(line, pos, lineNumber);
@@ -148,7 +152,20 @@ int main() {
                     case OPERATOR:
                         cout << "Operator";
                         break;
+                    case WHITESPACE:
+                        // Skip printing anything for whitespace tokens
+                        break;
+                    case LINE_COMMENT:
+                        cout << "Line Comment";
+                        break;
+                    case SECTION_COMMENT:
+                        cout << "Section Comment";
+                        break;
+                    default:
+                        cerr << "Unexpected token type encountered.";
+                        break;
                 }
+
                 cout << " (" << token.value << ") - Line " << token.line << ", Column " << token.column << endl;
             }
         }
